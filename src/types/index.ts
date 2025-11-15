@@ -1,28 +1,68 @@
-export interface Detection {
-  person_id: number
-  track_id?: string
-  bbox: number[] // [x1, y1, x2, y2]
-  confidence: number
-  face_detected: boolean
-  face_bbox?: number[]
-  action?: 'walking' | 'standing' | 'sitting' | 'running' | 'lying' | 'unknown'
-  person_type?: 'resident' | 'guest' | 'unknown'
-  person_id_ref?: string // ID in residents table
-  person_name?: string
-  timestamp: string
+export enum CameraStatus {
+  ONLINE = 'online',
+  OFFLINE = 'offline',
+  MAINTENANCE = 'maintenance',
+  ERROR = 'error',
+}
+
+export enum StreamType {
+  RTSP = 'rtsp',
+  HTTP = 'http',
+  FILE = 'file',
+  WEBCAM = 'webcam',
+}
+
+export interface StreamConfig {
+  fps?: number;
+  resolution?: string;
+  codec?: string;
+  buffer_size?: number;
 }
 
 export interface Camera {
-  id: string
-  name: string
-  location: string
-  zone_type?: 'entrance' | 'lobby' | 'elevator' | 'floor' | 'restricted'
-  coordinates?: [number, number] // [longitude, latitude]
-  rtsp_url?: string
-  status: 'online' | 'offline' | 'error'
-  fps?: number
-  resolution?: string
-  lastUpdate: string
+  id: string;
+  name: string;
+  location: string;
+  zone_type?: string;
+  stream_url?: string;
+  stream_type: StreamType;
+  is_streaming: boolean;
+  stream_config?: StreamConfig;
+  last_frame_at?: Date;
+  frame_count: number;
+  status: CameraStatus;
+  building_id: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export type CameraLayout = '1x1' | '2x2' | '3x3' | '4x4';
+
+export interface StreamStatus {
+  camera_id: string;
+  camera_name: string;
+  status: CameraStatus;
+  is_streaming: boolean;
+  stream_type: StreamType;
+  last_frame_at: Date | null;
+  frame_count: number;
+  stream_config: StreamConfig | null;
+  stream_instance?: {
+    started_at: Date;
+    frames_processed: number;
+    is_active: boolean;
+  };
+}
+
+export interface Detection {
+  id: string;
+  track_id: string;
+  bbox: number[];
+  confidence: number;
+  person_type: string;
+  person_name?: string;
+  face_confidence?: number;
+  timestamp: Date;
 }
 
 export interface Violation {
@@ -86,8 +126,19 @@ export interface Resident {
 }
 
 export interface ApiResponse<T> {
-  success: boolean
-  data?: T
-  error?: string
-  message?: string
+  success: boolean;
+  statusCode: number;
+  message: string;
+  data: T;
+  timestamp: string;
 }
+
+export interface FrameUpdate {
+  camera_id: string;
+  camera_name: string;
+  frame_number: number;
+  detections: Detection[];
+  total_persons: number;
+  timestamp: string;
+}
+

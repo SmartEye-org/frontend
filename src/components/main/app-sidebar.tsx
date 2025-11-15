@@ -38,8 +38,8 @@ type Item = {
 
 const items: Item[] = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutGrid },
-  { title: "Live Monitoring", href: "/live", icon: Camera },
-  { title: "Monitoring Center", href: "/monitoring", icon: Monitor },
+  { title: "Live Monitoring", href: "/live-monitoring", icon: Camera },
+  { title: "Monitoring Center", href: "/monitoring-center", icon: Monitor },
   { title: "Notification", href: "/notification", icon: BellRing },
 ];
 
