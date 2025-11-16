@@ -1,30 +1,15 @@
-"use client";
+'use client';
 
-import { ReactNode, createContext, useContext, useState } from "react";
+import { useEffect } from 'react';
+import { useAuthStore } from '@/store/auth-store';
 
-interface AuthContextType {
-  user: string | null;
-  login: (user: string) => void;
-  logout: () => void;
-}
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const initialize = useAuthStore((state) => state.initialize);
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+  useEffect(() => {
+    // Initialize auth state from localStorage
+    initialize();
+  }, [initialize]);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<string | null>(null);
-
-  const login = (username: string) => setUser(username);
-  const logout = () => setUser(null);
-
-  return (
-    <AuthContext.Provider value={{ user, login, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error("useAuth must be used within an AuthProvider");
-  return context;
+  return <>{children}</>;
 }
