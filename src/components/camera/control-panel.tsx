@@ -44,13 +44,19 @@ export function ControlPanel({
 
   const handleStartAll = async () => {
     for (const cameraId of selectedCameras) {
-      await startStream.mutateAsync({ cameraId, config: { fps: 5 } });
+      const camera = cameras?.find(c => c.id === cameraId);
+      if (camera && !camera.is_streaming) {
+        await startStream.mutateAsync({ cameraId, config: { fps: 15 } });
+      }
     }
   };
 
   const handleStopAll = async () => {
     for (const cameraId of selectedCameras) {
-      await stopStream.mutateAsync(cameraId);
+      const camera = cameras?.find(c => c.id === cameraId);
+      if (camera && camera.is_streaming) {
+        await stopStream.mutateAsync(cameraId);
+      }
     }
   };
 
@@ -83,9 +89,9 @@ export function ControlPanel({
               {cameras?.map((camera) => (
                 <div
                   key={camera.id}
-                  className="flex items-center justify-between p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded"
+                  className="flex items-center justify-between p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded group"
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-1">
                     <Checkbox
                       id={camera.id}
                       checked={selectedCameras.includes(camera.id)}
@@ -95,17 +101,47 @@ export function ControlPanel({
                     />
                     <Label 
                       htmlFor={camera.id}
-                      className="text-sm font-normal cursor-pointer"
+                      className="text-sm font-normal cursor-pointer flex-1"
                     >
                       {camera.name}
                     </Label>
                   </div>
 
-                  {camera.is_streaming && (
-                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                      Streaming
-                    </Badge>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {camera.is_streaming ? (
+                      <>
+                        <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                          Streaming
+                        </Badge>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={async () => {
+                            await stopStream.mutateAsync(camera.id);
+                          }}
+                          disabled={stopStream.isPending}
+                        >
+                          <Square className="w-3 h-3 text-red-600" />
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={async () => {
+                          await startStream.mutateAsync({ 
+                            cameraId: camera.id, 
+                            config: { fps: 15 } 
+                          });
+                        }}
+                        disabled={startStream.isPending}
+                      >
+                        <Play className="w-3 h-3 text-green-600" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -186,7 +222,7 @@ export function ControlPanel({
             ) : (
               <Play className="w-4 h-4 mr-2" />
             )}
-            Start All
+            Start All Selected
           </Button>
 
           <Button
@@ -201,7 +237,7 @@ export function ControlPanel({
             ) : (
               <Square className="w-4 h-4 mr-2" />
             )}
-            Stop All
+            Stop All Selected
           </Button>
         </CardContent>
       </Card>
