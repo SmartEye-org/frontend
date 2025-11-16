@@ -10,6 +10,7 @@ const routeMap: Record<
     "/dashboard": { title: "Dashboard" },
     "/live-monitoring": { title: "Live Monitoring" },
     "/monitoring-center": { title: "Monitoring Center" },
+    "/user-management": { title: "User Management" },
     "/notification": { title: "Notification" },
 };
 
