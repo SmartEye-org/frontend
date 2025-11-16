@@ -11,8 +11,7 @@ import {
   TableCell,
   TableBody,
 } from "@/components/ui/table";
-
-import { Button } from "@/components/ui/button";
+import ViewDetailDialog from "./view-detail-dialog";
 import {
   Pagination,
   PaginationContent,
@@ -39,7 +38,7 @@ export default function EventsTable() {
   const [filters, setFilters] = useState<Filters>({});
   const [data, setData] = useState<EventItem[]>([]);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(5); // giả lập
+  const [totalPages, setTotalPages] = useState(5);
   const [loading, setLoading] = useState(false);
 
   // ===== API MOCK FUNCTION =====
@@ -124,9 +123,7 @@ export default function EventsTable() {
                 <TableCell>{row.confidence}</TableCell>
                 <TableCell>{row.alert}</TableCell>
                 <TableCell>
-                  <Button variant="link" className="px-0">
-                    View
-                  </Button>
+                  <ViewDetailDialog/>
                 </TableCell>
               </TableRow>
             ))}

@@ -8,8 +8,8 @@ const routeMap: Record<
     { title: string }
 > = {
     "/dashboard": { title: "Dashboard" },
-    "/live": { title: "Live Monitoring" },
-    "/monitoring": { title: "Monitoring Center" },
+    "/live-monitoring": { title: "Live Monitoring" },
+    "/monitoring-center": { title: "Monitoring Center" },
     "/notification": { title: "Notification" },
 };
 
