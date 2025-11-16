@@ -56,13 +56,15 @@ export interface StreamStatus {
 
 export interface Detection {
   id: string;
-  track_id: string;
-  bbox: number[];
+  bbox: [number, number, number, number]; // [x1, y1, x2, y2]
   confidence: number;
-  person_type: string;
+  action: string;
+  person_type: 'unknown' | 'resident' | 'guest' | 'staff';
+  person_id?: string;
   person_name?: string;
   face_confidence?: number;
-  timestamp: Date;
+  violation_detected: boolean;
+  timestamp: string;
 }
 
 export interface Violation {
@@ -137,6 +139,7 @@ export interface FrameUpdate {
   camera_id: string;
   camera_name: string;
   frame_number: number;
+  frame_data: string;
   detections: Detection[];
   total_persons: number;
   timestamp: string;

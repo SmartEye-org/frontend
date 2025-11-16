@@ -26,21 +26,20 @@ export function useCameraStream({
     if (!enabled || socketRef.current) return;
 
     try {
-      const socket = io(process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:8080', {
+      const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:8080';
+
+      const socket = io(wsUrl, {
         transports: ['websocket', 'polling'],
       });
 
       socket.on('connect', () => {
-        console.log(`WebSocket connected for camera ${cameraId}`);
         setIsConnected(true);
         setError(null);
 
-        // Subscribe to camera
         socket.emit('subscribe_camera', { camera_id: cameraId });
       });
 
       socket.on('disconnect', () => {
-        console.log(`WebSocket disconnected for camera ${cameraId}`);
         setIsConnected(false);
       });
 
@@ -51,6 +50,8 @@ export function useCameraStream({
         }
       });
 
+      socket.on('frame', () => {});
+
       socket.on('stream_status', (data) => {
         if (data.camera_id === cameraId) {
           onStatusChange?.(data);
@@ -58,14 +59,14 @@ export function useCameraStream({
       });
 
       socket.on('connect_error', (err) => {
-        console.error('WebSocket connection error:', err);
         setError(err.message);
         setIsConnected(false);
       });
 
+      socket.onAny(() => {});
+
       socketRef.current = socket;
     } catch (err) {
-      console.error('Error creating socket:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
     }
   }, [cameraId, enabled, onFrame, onStatusChange]);
@@ -81,16 +82,11 @@ export function useCameraStream({
 
   useEffect(() => {
     queueMicrotask(() => {
-      if (enabled) {
-        connect();
-      } else {
-        disconnect();
-      }
+      if (enabled) connect();
+      else disconnect();
     });
 
-    return () => {
-      disconnect();
-    };
+    return () => disconnect();
   }, [enabled, connect, disconnect]);
 
   return {

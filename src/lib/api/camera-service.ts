@@ -16,7 +16,6 @@ class CameraService extends BaseApiService {
    */
   async getCameras(): Promise<Camera[]> {
     const response = await this.get<ApiResponse<Camera[]>>('');
-    console.log('CameraService.getCameras response:', response);
     return response.data || [];
   }
 

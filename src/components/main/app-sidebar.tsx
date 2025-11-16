@@ -19,7 +19,6 @@ import {
   BellRing,
   Settings,
   LogOut,
-  User
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -28,7 +27,6 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { SidebarFooter } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
 
 type Item = {
   title: string;
@@ -100,7 +98,7 @@ export default function AppSidebar() {
               <DropdownMenuContent
                 side="top"
                 align="start"
-                className="w-[var(--radix-dropdown-menu-trigger-width)]"
+                className="w-(--radix-dropdown-menu-trigger-width)"
               >
                 <DropdownMenuItem className="flex items-center gap-2 text-red-500 w-full cursor-pointer">
                   <LogOut className="h-4 w-4 shrink-0" />

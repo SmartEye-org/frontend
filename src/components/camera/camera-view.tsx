@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Camera, CameraStatus, Detection } from '@/types';
 import { useCameraStream } from '@/hooks/use-camera-stream';
-import { MonitorOff, Wifi, WifiOff, Video } from 'lucide-react';
+import { MonitorOff, Wifi, WifiOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { PERSON_TYPES } from '@/lib/constants';
 
 interface CameraViewProps {
   camera: Camera;
@@ -20,14 +21,69 @@ export function CameraView({
   showConfidence = true,
 }: CameraViewProps) {
   const [detections, setDetections] = useState<Detection[]>([]);
+  const [imageDimensions, setImageDimensions] = useState({ width: 1920, height: 1080 });
+  const [fps, setFps] = useState<number>(0);
   
+  const imageRef = useRef<HTMLImageElement>(null);
+  const frameTimestamps = useRef<number[]>([]);
+  const lastUpdateTime = useRef<number>(0);
+
   const { isConnected, latestFrame } = useCameraStream({
     cameraId: camera.id,
     enabled: camera.is_streaming,
     onFrame: (data) => {
       setDetections(data.detections);
+      
+      // Calculate FPS
+      const now = Date.now();
+      
+      // Initialize lastUpdateTime on first frame
+      if (lastUpdateTime.current === 0) {
+        lastUpdateTime.current = now;
+      }
+      
+      frameTimestamps.current.push(now);
+      
+      // Keep only timestamps from the last second
+      frameTimestamps.current = frameTimestamps.current.filter(
+        (timestamp) => now - timestamp < 1000
+      );
+      
+      // Update FPS every 500ms to avoid too frequent updates
+      if (now - lastUpdateTime.current > 500) {
+        setFps(frameTimestamps.current.length);
+        lastUpdateTime.current = now;
+      }
     },
   });
+
+  // Reset FPS data when stream stops (only refs, no setState)
+  useEffect(() => {
+    if (!camera.is_streaming) {
+      frameTimestamps.current = [];
+      lastUpdateTime.current = 0;
+    }
+  }, [camera.is_streaming]);
+
+  // Update image dimensions when frame loads
+  useEffect(() => {
+    if (imageRef.current && latestFrame?.frame_data) {
+      const img = imageRef.current;
+      const updateDimensions = () => {
+        setImageDimensions({
+          width: img.naturalWidth || 1920,
+          height: img.naturalHeight || 1080,
+        });
+      };
+
+      if (img.complete) {
+        updateDimensions();
+      } else {
+        img.addEventListener('load', updateDimensions);
+        return () => img.removeEventListener('load', updateDimensions);
+      }
+    }
+  }, [latestFrame?.frame_data]);
 
   const statusColor = {
     [CameraStatus.ONLINE]: 'bg-green-500',
@@ -43,6 +99,13 @@ export function CameraView({
     [CameraStatus.MAINTENANCE]: 'Maintenance',
   };
 
+  // FPS color based on performance
+  const getFpsColor = (fps: number) => {
+    if (fps >= 15) return 'bg-green-500';
+    if (fps >= 10) return 'bg-yellow-500';
+    return 'bg-red-500';
+  };
+
   return (
     <Card className="overflow-hidden">
       {/* Header */}
@@ -56,14 +119,14 @@ export function CameraView({
           />
           <span className="font-medium text-sm">{camera.name}</span>
         </div>
-        
+
         <div className="flex items-center gap-2">
           {isConnected ? (
             <Wifi className="w-4 h-4 text-green-500" />
           ) : (
             <WifiOff className="w-4 h-4 text-gray-400" />
           )}
-          
+
           <Badge variant="outline" className="text-xs">
             {statusText[camera.status]}
           </Badge>
@@ -74,40 +137,40 @@ export function CameraView({
       <div className="relative aspect-video bg-black">
         {camera.is_streaming && latestFrame ? (
           <>
-            {/* Placeholder for actual video frame */}
-            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800">
-              <div className="text-center">
-                <Video className="w-16 h-16 text-gray-600 mx-auto mb-2" />
-                <div className="text-white text-sm">
-                  Frame #{latestFrame.frame_number}
-                </div>
-                <div className="text-gray-400 text-xs mt-1">
-                  {camera.location}
-                </div>
-              </div>
-            </div>
+            {/* ACTUAL VIDEO FRAME */}
+            {latestFrame.frame_data && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                ref={imageRef}
+                src={latestFrame.frame_data}
+                alt={`Frame ${latestFrame.frame_number}`}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            )}
 
-            {/* Bounding Boxes Overlay */}
+            {/* Bounding Boxes Overlay with dynamic viewBox */}
             {showBoundingBoxes && detections.length > 0 && (
               <svg
                 className="absolute inset-0 w-full h-full pointer-events-none"
-                viewBox="0 0 1920 1080"
-                preserveAspectRatio="none"
+                viewBox={`0 0 ${imageDimensions.width} ${imageDimensions.height}`}
+                preserveAspectRatio="xMidYMid slice"
               >
-                {detections.map((detection, idx) => {
-                  const [x1, y1, x2, y2] = detection.bbox;
+                {detections.map((d, idx) => {
+                  const [x1, y1, x2, y2] = d.bbox;
                   const width = x2 - x1;
                   const height = y2 - y1;
 
-                  // Color based on person type
-                  const color = 
-                    detection.person_type === 'resident' ? '#22c55e' :
-                    detection.person_type === 'guest' ? '#3b82f6' :
-                    '#ef4444';
+                  const type = PERSON_TYPES[d.person_type as keyof typeof PERSON_TYPES]
+                    || PERSON_TYPES.unknown;
+
+                  const color =
+                    d.person_type === "resident" ? "#22c55e" :
+                      d.person_type === "guest" ? "#eab308" : // yellow-500
+                        "#ef4444"; // red-500
 
                   return (
                     <g key={idx}>
-                      {/* Bounding box */}
+                      {/* Box */}
                       <rect
                         x={x1}
                         y={y1}
@@ -117,29 +180,28 @@ export function CameraView({
                         stroke={color}
                         strokeWidth="3"
                       />
-                      
+
                       {/* Label background */}
                       <rect
                         x={x1}
                         y={y1 - 25}
-                        width={180}
+                        width={200}
                         height={25}
                         fill={color}
-                        fillOpacity="0.8"
+                        opacity={0.85}
                       />
-                      
-                      {/* Label text */}
+
+                      {/* Text */}
                       <text
-                        x={x1 + 5}
-                        y={y1 - 8}
+                        x={x1 + 6}
+                        y={y1 - 7}
                         fill="white"
                         fontSize="14"
                         fontWeight="bold"
                         fontFamily="system-ui"
                       >
-                        {detection.person_name || detection.person_type}
-                        {showConfidence &&
-                          ` ${Math.round(detection.confidence * 100)}%`}
+                        {type.label}
+                        {showConfidence ? ` ${Math.round(d.confidence * 100)}%` : ""}
                       </text>
                     </g>
                   );
@@ -147,7 +209,16 @@ export function CameraView({
               </svg>
             )}
 
-            {/* Detection count badge */}
+            {/* Top-left overlay: FPS Badge */}
+            {camera.is_streaming && (
+              <div className="absolute top-2 left-2">
+                <Badge className={cn(getFpsColor(fps), "text-white font-mono")}>
+                  {fps} FPS
+                </Badge>
+              </div>
+            )}
+
+            {/* Top-right overlay: Detection count badge */}
             {detections.length > 0 && (
               <div className="absolute top-2 right-2">
                 <Badge className="bg-green-500 text-white">
@@ -175,7 +246,7 @@ export function CameraView({
             </span>{' '}
             detected
           </span>
-          
+
           <span className="text-gray-600 dark:text-gray-400">
             <span className="font-medium text-gray-900 dark:text-gray-100">
               {camera.frame_count}
