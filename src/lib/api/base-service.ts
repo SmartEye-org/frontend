@@ -59,6 +59,17 @@ export class BaseApiService {
   }
 
   /**
+   * PATCH request
+   */
+  protected async patch<T>(url: string, data?: unknown): Promise<T> {
+    const response: AxiosResponse<T> = await axiosClient.patch(
+      `${this.baseUrl}${url}`,
+      data
+    )
+    return response.data
+  }
+
+  /**
    * DELETE request
    */
   protected async delete<T>(url: string): Promise<T> {

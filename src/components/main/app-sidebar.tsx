@@ -19,6 +19,7 @@ import {
   BellRing,
   Settings,
   LogOut,
+  User,
 } from "lucide-react";
 import {
   DropdownMenu,
